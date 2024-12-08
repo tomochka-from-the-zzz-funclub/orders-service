@@ -1,0 +1,56 @@
+{
+  "order_uid": 12345,
+  "delivery": {
+  "name": "Иван Иванов",
+  "phone": "+7 123 456 78 90",
+  "zip": "123456",
+  "city": "Москва",
+  "address": "ул. Пушкина, д. 1",
+  "region": "Центральный",
+  "email": "ivan.ivanov@example.com"
+  },
+  "payment": {
+  "transaction": "txn_987654321",
+  "request_id": "req_123456789",
+  "currency": "RUB",
+  "provider": "Тинькофф",
+  "amount": 5000,
+  "payment_dt": 1633036800,
+  "bank": "Тинькофф Банк",
+  "delivery_cost": 300,
+  "custom_fee": 0
+  },
+  "items": [
+  {
+  "id": 1,
+  "track_number": "TRK123456789",
+  "category": {
+  "id": 10,
+  "category_name": "Электроника"
+  },
+  "price": 4500,
+  "name": "Смартфон",
+  "size": "6.5 дюймов",
+  "total_price": 4500,
+  "brand": "Бренд A",
+  "status": 1
+  },
+  {
+  "id": 2,
+  "track_number": "TRK987654321",
+  "category": {
+  "id": 11,
+  "category_name": "Аксессуары"
+  },
+  "price": 500,
+  "name": "Чехол для смартфона",
+  "size": "Универсальный",
+  "total_price": 500,
+  "brand": "Бренд B",
+  "status": 1
+  }
+  ],
+  "locale": "ru",
+  "delivery_service": "СДЭК",
+  "date_created": "2023-10-01T12:00:00Z"
+  }
