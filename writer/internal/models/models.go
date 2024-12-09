@@ -35,13 +35,13 @@ type Payment struct {
 }
 
 type Order struct {
-	Id              int         `json:"order_id"`
-	DeliveryMan     DeliveryMan `json:"delivery"`
-	Payment         Payment     `json:"payment"`
-	Items           []Item      `json:"items"`
-	Locale          string      `json:"locale"`
-	DeliveryService string      `json:"delivery_service"`
-	DateCreated     string      `json:"date_created"`
+	Id int `json:"order_id"`
+	//DeliveryMan     DeliveryMan `json:"delivery"`
+	Payment         Payment `json:"payment"`
+	Items           []Item  `json:"items"`
+	Locale          string  `json:"locale"`
+	DeliveryService string  `json:"delivery_service"`
+	DateCreated     string  `json:"date_created"`
 }
 
 type CategoryItem struct {

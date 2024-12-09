@@ -1,14 +1,4 @@
 {
-  "order_uid": 12345,
-  "delivery": {
-  "name": "Иван Иванов",
-  "phone": "+7 123 456 78 90",
-  "zip": "123456",
-  "city": "Москва",
-  "address": "ул. Пушкина, д. 1",
-  "region": "Центральный",
-  "email": "ivan.ivanov@example.com"
-  },
   "payment": {
   "transaction": "txn_987654321",
   "request_id": "req_123456789",

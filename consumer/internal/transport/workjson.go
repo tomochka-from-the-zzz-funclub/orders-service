@@ -25,6 +25,17 @@ func ParseJsonOrder(ctx *fasthttp.RequestCtx) (models.Order, error) {
 
 	return models.Order{}, myErrors.ErrParseJSON
 }
+
+func ParseJsonDEliveryMan(ctx *fasthttp.RequestCtx) (models.DeliveryMan, error) {
+	var del models.DeliveryMan
+	err := json.NewDecoder(bytes.NewReader(ctx.Request.Body())).Decode(&del)
+	if err != nil {
+		return models.DeliveryMan{}, myErrors.ErrParseJSON
+	}
+
+	return del, nil
+}
+
 func WriteJson(ctx *fasthttp.RequestCtx, s string) error {
 	ctx.SetContentType("application/json")
 	ctx.Response.BodyWriter()

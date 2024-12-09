@@ -78,7 +78,6 @@ CREATE TABLE IF NOT EXISTS  payment (
 
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
-    delivery_id INT,
     payment_id INT,
 	items_id INT[],
     locale VARCHAR(10),
@@ -89,6 +88,12 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE TABLE IF NOT EXISTS order_status (
     order_id INT,
     status VARCHAR(50),
+    updated_at VARCHAR(40)
+);
+
+CREATE TABLE IF NOT EXISTS delivery (
+    order_id INT,
+    delivery_id VARCHAR(50),
     updated_at VARCHAR(40)
 );
 `
@@ -104,11 +109,11 @@ CREATE TABLE IF NOT EXISTS order_status (
 func (db *Postgres) AddOrderStruct(order models.Order) (int, error) {
 	myLog.Log.Debugf("Go to bd in Set")
 
-	id_delivery, err := db.AddDeliveryMan(order.DeliveryMan)
-	if err != nil {
-		myLog.Log.Errorf("Error CreateDelivery: %v", err.Error())
-		return 0, err
-	}
+	// id_delivery, err := db.AddDeliveryMan(order.DeliveryMan)
+	// if err != nil {
+	// 	myLog.Log.Errorf("Error CreateDelivery: %v", err.Error())
+	// 	return 0, err
+	// }
 	id_payment, err := db.AddPayment(order.Payment)
 	if err != nil {
 		myLog.Log.Errorf("Error CreatePayment: %v", err.Error())
@@ -126,7 +131,7 @@ func (db *Postgres) AddOrderStruct(order models.Order) (int, error) {
 	// 	return "", err
 	// }
 
-	id, err := db.AddOrder(order, id_item, id_delivery, id_payment)
+	id, err := db.AddOrder(order, id_item, id_payment)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			myLog.Log.Debugf("The entry was not added. No data returned: %+v", err.Error())
@@ -151,21 +156,50 @@ func (db *Postgres) AddOrderStruct(order models.Order) (int, error) {
 func (db *Postgres) AddDeliveryMan(delivery models.DeliveryMan) (int, error) {
 	query_add_delivery :=
 		`WITH insert_return AS (
-		INSERT INTO  delivery_man (name, phone, zip, city, address, region,	email)
+		 INSERT INTO  delivery_man (name, phone, zip, city, address, region, email)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id
-	)
-	SELECT id FROM insert_return`
-	var id_delivery string
-	err := db.Connection.QueryRow(query_add_delivery, delivery.Name, delivery.Phone, delivery.Zip, delivery.City, delivery.Address, delivery.Region, delivery.Email).Scan(&id_delivery)
+        )
+        SELECT id FROM insert_return`
+	var id string
+	err := db.Connection.QueryRow(query_add_delivery, delivery.Name, delivery.Phone, delivery.Zip, delivery.City, delivery.Address, delivery.Region, delivery.Email).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
-	id, err := strconv.Atoi(id_delivery)
+	id_, err := strconv.Atoi(id)
+	return id_, nil
+}
+
+func (db *Postgres) AddDeliveryMach(order_id int, delivery_man_id int) error {
+	var count_d, count_o int
+	err := db.Connection.QueryRow("SELECT COUNT(*) FROM delivery_man WHERE id = $1", delivery_man_id).Scan(&count_d)
 	if err != nil {
-		myLog.Log.Errorf("Invalid id Delivery man")
+		myLog.Log.Errorf(err.Error())
 	}
-	return id, nil
+
+	err = db.Connection.QueryRow("SELECT COUNT(*) FROM orders WHERE id = $1", order_id).Scan(&count_o)
+	if err != nil {
+		myLog.Log.Errorf(err.Error())
+	}
+
+	// Проверяем, есть ли запись
+	if count_o > 0 && count_d > 0 {
+		fmt.Printf("Запись с id %d существует.\n", order_id)
+		query_add_delivery :=
+			`INSERT INTO  delivery (order_id, delivery_id, updated_at)
+		VALUES ($1, $2, $3)`
+		err = db.Connection.QueryRow(query_add_delivery, strconv.Itoa(order_id), strconv.Itoa(delivery_man_id), time.Now().Format("2006-01-02 15:04:05")).Err()
+		if err != nil {
+			return err
+		}
+	} else {
+		fmt.Printf("Запись с id %d не найдена.\n", order_id)
+		return myErrors.ErrNotFoundOrder
+	}
+
+	err = db.UpdateStatus(order_id, "delivery")
+
+	return nil
 }
 
 func (db *Postgres) AddPayment(payment models.Payment) (int, error) {
@@ -232,31 +266,20 @@ func (db *Postgres) AddItemsWithCategory(items []models.Item) ([]int, error) {
 	return id_items, nil
 }
 
-func (db *Postgres) AddOrder(order models.Order, items []int, delivery int, payment int) (int, error) {
+func (db *Postgres) AddOrder(order models.Order, items []int, payment int) (int, error) {
 	query_add_order := `
-	INSERT INTO orders (delivery_id, payment_id, items_id, locale, delivery_service, date_created)
-	VALUES ($1, $2, $3::int[], $4, $5, $6)
+	WITH insert_return AS (
+	INSERT INTO orders (payment_id, items_id, locale, delivery_service, date_created)
+	VALUES ($1, $2::int[], $3, $4, $5)
+	RETURNING id
+        )
+        SELECT id FROM insert_return
 `
 	var id int
-	err := db.Connection.QueryRow(query_add_order, delivery, payment, pq.Array(items), order.Locale,
+	err := db.Connection.QueryRow(query_add_order, payment, pq.Array(items), order.Locale,
 		order.DeliveryService, order.DateCreated).Scan(&id)
 	return id, err
 }
-
-// func (db *Postgres) AddCustomers(custom models.Caustom) (string, error) {
-// 	query_add_order := `
-// 	WITH insert_return AS (
-// 		INSERT INTO orders (first_name, last_name, email, phone, address, city, region, zip, created_at)
-// 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-// 		RETURNING id
-//     )
-//     SELECT id FROM insert_return
-// `
-// 	var id string
-// 	err := db.Connection.QueryRow(query_add_order, custom.FirstName, custom.LastName, custom.Email, custom.Phone, custom.Address,
-// 		custom.City, custom.Region, custom.Zip, custom.Created_at).Scan(&id)
-// 	return id, err
-// }
 
 func (db *Postgres) AddOrderStatus(order_id int) error {
 	query_add_order := `
@@ -272,9 +295,9 @@ func (db *Postgres) AddOrderStatus(order_id int) error {
 
 func (db *Postgres) UpdateStatus(order_id int, status string) error {
 	query_update_order_status := `
-	UPDATE orders 
+	UPDATE order_status 
 	SET status = $1, updated_at = $2 
-	WHERE order_uid = $3
+	WHERE order_id = $3
 	`
 
 	_, err := db.Connection.Exec(query_update_order_status, status, time.Now(), order_id)
@@ -284,19 +307,16 @@ func (db *Postgres) UpdateStatus(order_id int, status string) error {
 	return err
 }
 
+// добавить категорию и что-то еще
 func (db *Postgres) GetOrder(order_id string) (models.Order, error) {
 	myLog.Log.Debugf("Go to db in GetOrder with id: %+v", order_id)
 	var order models.Order
-	var delivery models.DeliveryMan
 	var payment models.Payment
 	query_get_order := `
     SELECT o.items, o.locale, o.delivery_service, o.date_created,
-        d.name, d.phone, d.zip, d.city, d.address, d.region, d.email,
         p.transaction, p.request_id, p.currency, p.provider, p.amount, p.payment_dt, p.bank, p.delivery_cost, p.custom_fee
     FROM 
         orders o
-    LEFT JOIN 
-        delivery d ON o.delivery = d.id
     LEFT JOIN 
         payment p ON o.payment = p.id
     WHERE 
@@ -320,13 +340,6 @@ func (db *Postgres) GetOrder(order_id string) (models.Order, error) {
 			&order.Locale,
 			&order.DeliveryService,
 			&order.DateCreated,
-			&delivery.Name,
-			&delivery.Phone,
-			&delivery.Zip,
-			&delivery.City,
-			&delivery.Address,
-			&delivery.Region,
-			&delivery.Email,
 			&payment.Transaction,
 			&payment.RequestID,
 			&payment.Currency,
@@ -358,81 +371,94 @@ func (db *Postgres) GetOrder(order_id string) (models.Order, error) {
 		items = append(items, item)
 	}
 	order.Items = items
-	order.DeliveryMan = delivery
+	//order.DeliveryMan = delivery
 	order.Payment = payment
 	return order, nil
 }
 
-func (db *Postgres) GetAllOrders() (map[int]models.Order, error) {
-	result := make(map[int]models.Order)
-
-	query := `SELECT o.order_id, 
-      	o.items, o.locale, o.delivery_service, o.date_created,
-        d.name, d.phone, d.zip, d.city, d.address, d.region, d.email,
-        p.transaction, p.request_id, p.currency, p.provider, p.amount, p.payment_dt, p.bank, p.delivery_cost, p.custom_fee
-
-	FROM  orders o
-    LEFT JOIN 
-        delivery d ON o.delivery = d.id
-    LEFT JOIN 
-        payment p ON o.payment = p.id`
-
-	rows, err := db.Connection.Query(query)
+// / нужно получить все заказы этого доставщика и для них обновить статус
+func (db *Postgres) CheckDeliveryStart(delivery_man_id int) (bool, error) {
+	var count_o int
+	err := db.Connection.QueryRow("SELECT COUNT(*) FROM delivery WHERE delivery_id = $1", delivery_man_id).Scan(&count_o)
 	if err != nil {
-		return result, err
+		myLog.Log.Errorf(err.Error())
 	}
-	defer rows.Close()
-	var id_items []string
-	var order models.Order
-	var delivery models.DeliveryMan
-	var payment models.Payment
-	for rows.Next() {
-		err = rows.Scan(
-			&order.Id,
-			pq.Array(&id_items),
-			&order.Locale,
-			&order.DeliveryService,
-			&order.DateCreated,
-			&delivery.Name,
-			&delivery.Phone,
-			&delivery.Zip,
-			&delivery.City,
-			&delivery.Address,
-			&delivery.Region,
-			&delivery.Email,
-			&payment.Transaction,
-			&payment.RequestID,
-			&payment.Currency,
-			&payment.Provider,
-			&payment.Amount,
-			&payment.PaymentDT,
-			&payment.Bank,
-			&payment.DeliveryCost,
-			&payment.CustomFee,
-		)
-		if err != nil {
-			myLog.Log.Errorf("Error scanning row: %v", err.Error())
-			return result, err
-		}
-		query_get_item :=
-			`SELECT id, track_number, price, name, size, total_price, brand, status
-	WHERE id = $1`
-		var item models.Item
-		var items []models.Item
-		for i := 0; i < len(order.Items); i++ {
-			err = db.Connection.QueryRow(query_get_item, order.Items[i]).Scan(&item.Id, &item.TrackNumber, &item.Price, &item.Name, &item.Size,
-				&item.TotalPrice, &item.Brand, &item.Status)
-			if err != nil {
-				myLog.Log.Errorf("Error GetItems: %v", err.Error())
-				return result, err
-			}
-			items = append(items, item)
-		}
-		order.Items = items
-		order.DeliveryMan = delivery
-		order.Payment = payment
-		result[order.Id] = order
-		fmt.Println(order.Id)
+
+	if count_o > 4 {
+		//db.UpdateStatus()
 	}
-	return result, nil
+	return true, nil
 }
+
+// func (db *Postgres) GetAllOrders() (map[int]models.Order, error) {
+// 	result := make(map[int]models.Order)
+
+// 	query := `SELECT o.order_id,
+//       	o.items, o.locale, o.delivery_service, o.date_created,
+//         d.name, d.phone, d.zip, d.city, d.address, d.region, d.email,
+//         p.transaction, p.request_id, p.currency, p.provider, p.amount, p.payment_dt, p.bank, p.delivery_cost, p.custom_fee
+
+// 	FROM  orders o
+//     LEFT JOIN
+//         delivery d ON o.delivery = d.id
+//     LEFT JOIN
+//         payment p ON o.payment = p.id`
+
+// 	rows, err := db.Connection.Query(query)
+// 	if err != nil {
+// 		return result, err
+// 	}
+// 	defer rows.Close()
+// 	var id_items []string
+// 	var order models.Order
+// 	var delivery models.DeliveryMan
+// 	var payment models.Payment
+// 	for rows.Next() {
+// 		err = rows.Scan(
+// 			&order.Id,
+// 			pq.Array(&id_items),
+// 			&order.Locale,
+// 			&order.DeliveryService,
+// 			&order.DateCreated,
+// 			&delivery.Name,
+// 			&delivery.Phone,
+// 			&delivery.Zip,
+// 			&delivery.City,
+// 			&delivery.Address,
+// 			&delivery.Region,
+// 			&delivery.Email,
+// 			&payment.Transaction,
+// 			&payment.RequestID,
+// 			&payment.Currency,
+// 			&payment.Provider,
+// 			&payment.Amount,
+// 			&payment.PaymentDT,
+// 			&payment.Bank,
+// 			&payment.DeliveryCost,
+// 			&payment.CustomFee,
+// 		)
+// 		if err != nil {
+// 			myLog.Log.Errorf("Error scanning row: %v", err.Error())
+// 			return result, err
+// 		}
+// 		query_get_item :=
+// 			`SELECT id, track_number, price, name, size, total_price, brand, status
+// 	WHERE id = $1`
+// 		var item models.Item
+// 		var items []models.Item
+// 		for i := 0; i < len(order.Items); i++ {
+// 			err = db.Connection.QueryRow(query_get_item, order.Items[i]).Scan(&item.Id, &item.TrackNumber, &item.Price, &item.Name, &item.Size,
+// 				&item.TotalPrice, &item.Brand, &item.Status)
+// 			if err != nil {
+// 				myLog.Log.Errorf("Error GetItems: %v", err.Error())
+// 				return result, err
+// 			}
+// 			items = append(items, item)
+// 		}
+// 		order.Items = items
+// 		order.Payment = payment
+// 		result[order.Id] = order
+// 		fmt.Println(order.Id)
+// 	}
+// 	return result, nil
+// }

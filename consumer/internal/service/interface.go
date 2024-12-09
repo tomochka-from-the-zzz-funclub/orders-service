@@ -11,6 +11,9 @@ type InterfaceService interface {
 	Read(cfg config.Config)
 
 	UpdateStatusSrv(orderId int, status string) error
+	GiveOrderDelivery(orderId int, delivery_man_id int) error
+	CreateDeliveryMan(delivery_man models.DeliveryMan) (int, error)
+	CheckDeliveryStart(delivery_man_id int) (bool, error)
 }
 
 //mockgen -source=interface.go -destination=mocks/mock_interface.go -package=mocks
