@@ -59,6 +59,7 @@ func HandleCreate(cfg config.Config, s service.InterfaceService) {
 	hb.rout.PUT("/api/v1/update/status", hb.UpdateStatus())
 	hb.rout.POST("/api/v1/adition/delivery_man", hb.CreateDeliveryMan())
 	hb.rout.PUT("/api/v1/create/delivery", hb.GiveOrderToDeliveryMan())
+	//hb.rout.PUT("/api/v1/check_delivery", hb.CheckDeliveryStart())
 	hb.rout.GET("/api/v1", hb.GetHtml())
 	fmt.Println(fasthttp.ListenAndServe(":8080", hb.rout.Handler))
 }
@@ -226,33 +227,33 @@ func (hb *HandlersBuilder) CreateDeliveryMan() func(ctx *fasthttp.RequestCtx) {
 	}, "CreateDeliveryMan")
 }
 
-func (hb *HandlersBuilder) CheckDeliveryStart() func(ctx *fasthttp.RequestCtx) {
-	return metrics(func(ctx *fasthttp.RequestCtx) {
-		myLog.Log.Debugf("Start func CheckDeliveryStart: %+v", string(ctx.Request.Body()))
-		if ctx.IsPost() {
-			delivery_man_id_ := string(ctx.QueryArgs().Peek("delivery_man_id"))
-			if delivery_man_id_ == "" {
-				myLog.Log.Debugf("equql reqeust: new status")
-			} else {
-				delivery_man_id, err := strconv.Atoi(delivery_man_id_)
-				if err != nil {
-					myLog.Log.Errorf("Invalid order id: %+v", err.Error())
-				} else {
-					result, err := hb.srv.CheckDeliveryStart(delivery_man_id)
-					if err != nil {
-						if result {
-							myLog.Log.Debugf("Start delivery")
-						} else {
-							myLog.Log.Debugf("Not ready for delivery")
-						}
-					} else {
-						myLog.Log.Errorf("Error CheckDeliveryStart: %+v", err.Error())
-					}
-				}
-			}
-		} else {
-			ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
-			myLog.Log.Warnf("message from func CheckDeliveryStart %v", myErrors.ErrMethodNotAllowed.Error())
-		}
-	}, "CheckDeliveryStart")
-}
+// func (hb *HandlersBuilder) CheckDeliveryStart() func(ctx *fasthttp.RequestCtx) {
+// 	return metrics(func(ctx *fasthttp.RequestCtx) {
+// 		myLog.Log.Debugf("Start func CheckDeliveryStart: %+v", string(ctx.Request.Body()))
+// 		if ctx.IsPut() {
+// 			delivery_man_id_ := string(ctx.QueryArgs().Peek("delivery_man_id"))
+// 			if delivery_man_id_ == "" {
+// 				myLog.Log.Debugf("equql reqeust: new status")
+// 			} else {
+// 				delivery_man_id, err := strconv.Atoi(delivery_man_id_)
+// 				if err != nil {
+// 					myLog.Log.Errorf("Invalid order id: %+v", err.Error())
+// 				} else {
+// 					result, err := hb.srv.CheckDeliveryStart(delivery_man_id)
+// 					if err != nil {
+// 						if result {
+// 							myLog.Log.Debugf("Start delivery")
+// 						} else {
+// 							myLog.Log.Debugf("Not ready for delivery")
+// 						}
+// 					} else {
+// 						myLog.Log.Errorf("Error CheckDeliveryStart: %+v", err.Error())
+// 					}
+// 				}
+// 			}
+// 		} else {
+// 			ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
+// 			myLog.Log.Warnf("message from func CheckDeliveryStart %v", myErrors.ErrMethodNotAllowed.Error())
+// 		}
+// 	}, "CheckDeliveryStart")
+// }

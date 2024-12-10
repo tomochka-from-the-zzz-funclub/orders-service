@@ -37,7 +37,7 @@ func NewPostgres(cfg config.Config) *Postgres {
 		` 
 	CREATE TABLE IF NOT EXISTS  category_item (
     id SERIAL PRIMARY KEY,
-    category VARCHAR(255) NOT NULL
+    category VARCHAR(255) UNIQUE NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS item (
@@ -181,7 +181,7 @@ func (db *Postgres) AddDeliveryMach(order_id int, delivery_man_id int) error {
 	if err != nil {
 		myLog.Log.Errorf(err.Error())
 	}
-
+	fmt.Println(count_d, " ", count_o)
 	// Проверяем, есть ли запись
 	if count_o > 0 && count_d > 0 {
 		fmt.Printf("Запись с id %d существует.\n", order_id)
@@ -198,6 +198,21 @@ func (db *Postgres) AddDeliveryMach(order_id int, delivery_man_id int) error {
 	}
 
 	err = db.UpdateStatus(order_id, "delivery")
+
+	var count int
+	var orderIDs []int
+	err = db.Connection.QueryRow("SELECT COUNT(*) AS count, ARRAY_AGG(order_id) AS order_ids FROM delivery WHERE delivery_id = $1", delivery_man_id).Scan(&count, &orderIDs)
+	if err != nil {
+		myLog.Log.Errorf(err.Error())
+	}
+
+	if count_o >= 5 {
+		for i := 0; i < len(orderIDs); i++ {
+			db.UpdateStatus(orderIDs[i], "delivery")
+			myLog.Log.Debugf("The order with ID has been sent for delivery: ", order_id)
+		}
+
+	}
 
 	return nil
 }
@@ -226,6 +241,11 @@ func (db *Postgres) AddPayment(payment models.Payment) (int, error) {
 }
 
 func (db *Postgres) AddItemsWithCategory(items []models.Item) ([]int, error) {
+	check_category := ` 
+        SELECT id 
+		FROM category_item 
+		WHERE category = $1
+		`
 
 	query_add_items := `
         WITH insert_return AS (
@@ -245,12 +265,20 @@ func (db *Postgres) AddItemsWithCategory(items []models.Item) ([]int, error) {
 `
 	var id_items []int
 	for i := 0; i < len(items); i++ {
-		var id_category int
-		err := db.Connection.QueryRow(query_add_cat, items[i].Category.CategoryName).Scan(&id_category)
-		if err != nil {
-			myLog.Log.Errorf("Error CreateCategory: %v", err.Error())
-			return id_items, err
+		var id_category int = 0
+
+		err := db.Connection.QueryRow(check_category, items[i].Category.CategoryName).Scan(&id_category)
+
+		if err == nil || id_category == 0 {
+			myLog.Log.Debugf("This product category already exists, id: ", id_category)
+		} else {
+			err := db.Connection.QueryRow(query_add_cat, items[i].Category.CategoryName).Scan(&id_category)
+			if err != nil {
+				myLog.Log.Errorf("Error CreateCategory: %v", err.Error())
+				return id_items, err
+			}
 		}
+
 		var id int
 		err = db.Connection.QueryRow(query_add_items, items[i].TrackNumber, id_category, strconv.Itoa(items[i].Price),
 			items[i].Name, items[i].Size, strconv.Itoa(items[i].TotalPrice),
@@ -374,20 +402,6 @@ func (db *Postgres) GetOrder(order_id string) (models.Order, error) {
 	//order.DeliveryMan = delivery
 	order.Payment = payment
 	return order, nil
-}
-
-// / нужно получить все заказы этого доставщика и для них обновить статус
-func (db *Postgres) CheckDeliveryStart(delivery_man_id int) (bool, error) {
-	var count_o int
-	err := db.Connection.QueryRow("SELECT COUNT(*) FROM delivery WHERE delivery_id = $1", delivery_man_id).Scan(&count_o)
-	if err != nil {
-		myLog.Log.Errorf(err.Error())
-	}
-
-	if count_o > 4 {
-		//db.UpdateStatus()
-	}
-	return true, nil
 }
 
 // func (db *Postgres) GetAllOrders() (map[int]models.Order, error) {

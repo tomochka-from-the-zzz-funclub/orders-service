@@ -90,24 +90,24 @@ func (s *Srv) GiveOrderDelivery(orderId int, delivery_man_id int) error {
 	return err
 }
 
-// func (s *Srv) AddDeliveryMan(delivery_man models.DeliveryMan) error {
+// func (s *Srv) AddDeliveryMan(delivery_man models.DeliveryMan) (int, error) {
 // 	myLog.Log.Debugf("AddDeliveryMan")
-// 	err := s.db.AddDeliveryMan(delivery_man)
+// 	id, err := s.db.AddDeliveryMan(delivery_man)
 // 	if err != nil {
 // 		myLog.Log.Errorf("Error AddDeliveryMan: %+v", err.Error())
 // 	}
-// 	return err
+// 	return id, err
 // }
 
-func (s *Srv) CheckDeliveryStart(delovery_man_id int) (bool, error) {
-	res, err := s.db.CheckDeliveryStart(delovery_man_id)
-	if err != nil {
-		myLog.Log.Errorf("Error SRV CheckDeliveryStart: %+v", err.Error())
-		return res, err
-	}
-	myLog.Log.Errorf("Succes SRV CheckDeliveryStart: %+v", err.Error())
-	return res, nil
-}
+// func (s *Srv) CheckDeliveryStart(delovery_man_id int) (bool, error) {
+// 	res, err := s.db.CheckDeliveryStart(delovery_man_id)
+// 	if err != nil {
+// 		myLog.Log.Errorf("Error SRV CheckDeliveryStart: %+v", err.Error())
+// 		return res, err
+// 	}
+// 	myLog.Log.Errorf("Succes SRV CheckDeliveryStart: %+v", err.Error())
+// 	return res, nil
+// }
 
 func (s *Srv) Read(cfg config.Config) {
 	myLog.Log.Debugf("Start Read")

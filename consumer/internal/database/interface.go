@@ -13,5 +13,5 @@ type InterfacePostgresDB interface {
 	AddDeliveryMach(order_id int, delivery_man_id int) error
 
 	UpdateStatus(order_id int, status string) error
-	CheckDeliveryStart(delivery_man_id int) (bool, error)
+	//CheckDeliveryStart(delivery_man_id int) (bool, error)
 }
