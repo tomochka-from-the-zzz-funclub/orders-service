@@ -9,7 +9,6 @@ type Item struct {
 	Size        string       `json:"size"`
 	TotalPrice  int          `json:"total_price"`
 	Brand       string       `json:"brand"`
-	Status      int          `json:"status"`
 }
 
 type DeliveryMan struct {
@@ -35,7 +34,7 @@ type Payment struct {
 }
 
 type Order struct {
-	Id              int     `json:"order_id"`
+	//Id              int     `json:"order_id"`
 	Payment         Payment `json:"payment"`
 	Items           []Item  `json:"items"`
 	Locale          string  `json:"locale"`
@@ -54,15 +53,19 @@ type OrderStatus struct {
 	Updated_at string `json:"updated_at"`
 }
 
-// type Caustom struct {
-// 	Id         int
-// 	FirstName  string
-// 	LastName   string
-// 	Email      string
-// 	Phone      string
-// 	Address    string
-// 	City       string
-// 	Region     string
-// 	Zip        int
-// 	Created_at string
-// }
+type User struct {
+	FirstName  string `json:"first_name"`
+	LastName   string `json:"last_name"`
+	Email      string `json:"email"`
+	Phone      string `json:"phone"`
+	City       string `json:"city"`
+	DateSignUp string `json:"date_created"`
+}
+
+type Admin struct {
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Email     string `json:"email"`
+	Phone     string `json:"phone"`
+	City      string `json:"city"`
+}

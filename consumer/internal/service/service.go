@@ -90,6 +90,24 @@ func (s *Srv) GiveOrderDelivery(orderId int, delivery_man_id int) error {
 	return err
 }
 
+func (s *Srv) FindPhoneUser(phone string) error {
+	myLog.Log.Debugf("FindPhoneUser")
+	err := s.db.FindPhoneUser(phone)
+	if err != nil {
+		myLog.Log.Errorf("Error FindPhoneUser: %+v", err.Error())
+	}
+	return err
+}
+
+func (s *Srv) FindAdmin(id int) error {
+	myLog.Log.Debugf("FindAdmin")
+	err := s.db.CheckAdmin(id)
+	if err != nil {
+		myLog.Log.Errorf("Error FindPhoneUser: %+v", err.Error())
+	}
+	return err
+}
+
 // func (s *Srv) AddDeliveryMan(delivery_man models.DeliveryMan) (int, error) {
 // 	myLog.Log.Debugf("AddDeliveryMan")
 // 	id, err := s.db.AddDeliveryMan(delivery_man)
@@ -108,6 +126,20 @@ func (s *Srv) GiveOrderDelivery(orderId int, delivery_man_id int) error {
 // 	myLog.Log.Errorf("Succes SRV CheckDeliveryStart: %+v", err.Error())
 // 	return res, nil
 // }
+
+func (s *Srv) GetStatusSrv(orderUUID string) (string, string, error) {
+	myLog.Log.Debugf("GetStatusSrv with id: %+v", orderUUID)
+	//order, err := s.cache.Get(orderUUID)
+	// if err != nil {
+	status, time, err := s.db.GetStatus(orderUUID)
+	if err != nil {
+		return "", "", err
+	}
+	//s.cache.Add(orderdb)
+	return status, time, nil
+	//}
+	//return order, nil
+}
 
 func (s *Srv) Read(cfg config.Config) {
 	myLog.Log.Debugf("Start Read")

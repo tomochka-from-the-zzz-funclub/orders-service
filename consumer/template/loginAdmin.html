@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сервис заказов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+        input, textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: none;
+        }
+        /* Убираем стрелочки в полях ввода типа number */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield; /* Для Firefox */
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px 0;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            text-align: left;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Вход</h1>
+        <h2>Войти как администратор</h2>
+        <input type="number" id="idInput" placeholder="Введите ваш рабочий ID" />
+        <button id="addButton">Войти</button>
+        <div id="output" class="output"></div>
+    </div>
+
+    <script>
+        document.getElementById('addButton').addEventListener('click', () => {
+            const idInput = document.getElementById('idInput').value;
+            const output = document.getElementById('output');
+            output.textContent = 'Загрузка...';
+
+            // Проверяем, что введенный ID является числом
+            if (!idInput || isNaN(idInput)) {
+                output.textContent = 'Пожалуйста, введите корректный ID.';
+                return;
+            }
+
+            // Формируем URL с ID
+            const url = `http://localhost:8080/api/v1/admin/login?id=${encodeURIComponent(idInput)}`;
+
+            fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    
+                    throw new Error(`Ошибка HTTP: ${response.status}`);
+        
+                }
+                return response.json(); // Возвращаем JSON только в случае успешного ответа
+            })
+            .then(data => {
+                if (!data.token) {
+                    throw new Error('Токен не получен от сервера');
+                }
+                output.textContent = `Успешный вход. Ваш токен: ${data.token}`; // Выводим токен на экран
+                sessionStorage.setItem('jwt', data.token);
+                window.location.href = "http://localhost:8080/api/v1/admin"; 
+            })
+            .catch(error => {
+                output.textContent = `Ошибка: ${error.message}`;
+            });
+        });
+    </script>
+</body>
+</html>

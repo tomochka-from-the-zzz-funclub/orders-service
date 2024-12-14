@@ -12,6 +12,15 @@ type InterfacePostgresDB interface {
 	GetOrder(order_uuid string) (models.Order, error)
 	AddDeliveryMach(order_id int, delivery_man_id int) error
 
+	GetStatus(order_id string) (string, string, error)
+
 	UpdateStatus(order_id int, status string) error
 	//CheckDeliveryStart(delivery_man_id int) (bool, error)
+
+	FindPhoneUser(phone string) error
+
+	Registration(user models.User) error
+	CheckRegistration(phone string) error
+
+	CheckAdmin(id int) error
 }

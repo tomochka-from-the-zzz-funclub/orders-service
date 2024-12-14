@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сервис заказов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"] {
+            width: 300px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        /* Убираем стрелочки в полях ввода типа number */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type="number"] {
+            -moz-appearance: textfield; /* Для Firefox */
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            text-align: left;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Изменить статус заказа</h1>
+
+        <input type="number" id="idInput" placeholder="Введите ID заказа" required>
+        <input type="text" id="statusInput" placeholder="Введите новый статус" required>
+        <button id="updateButtonOrder">Изменить</button>
+        <div id="output1" class="output"></div>
+
+        <h1>Добавить работника доставки</h1>
+
+        <textarea id="jsonInput" rows="5" placeholder="Введите JSON"></textarea>
+        <button id="addDeliveryButton">Добавить</button>
+        <div id="output2" class="output"></div>
+
+        <h1>Передать в доставку заказ</h1>
+
+        <input type="number" id="idInput" placeholder="Введите ID заказа" required>
+        <input type="number" id="deliveryInput" placeholder="Введите ID работника доставки" required>
+        <button id="giveButtonOrder">Отправить</button>
+        <div id="output3" class="output"></div>
+
+
+    </div>
+
+    <script>
+        document.getElementById('updateButtonOrder').addEventListener('click', () => {
+            const orderId = document.getElementById('idInput').value;
+            const status = document.getElementById('statusInput').value;
+            const output = document.getElementById('output1');
+            output.textContent = 'Загрузка...';
+            const token = sessionStorage.getItem('jwt');
+            fetch(`http://localhost:8080/api/v1/admin/update/status?order_id=${encodeURIComponent(orderId)}&&auth=${encodeURIComponent(token)}&&status=${encodeURIComponent(status)}`, {
+                method: 'PUT',
+            })
+            .then(response => {
+                if (response.status === 303) {
+                    window.location.href = "http://localhost:8080/api/v1/admin/auth/login";
+                } else if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.status}`);
+                }
+                //return response.json();
+            })
+            .then(data => {
+                //output1.textContent = JSON.stringify(data, null, 2);
+                output2.textContent = 'Статус обновлен';
+
+            })
+            .catch(error => {
+                output1.textContent = `Ошибка: ${error.message}`;
+            });
+        });
+
+        document.getElementById('addDeliveryButton').addEventListener('click', () => {
+            const jsonInput = document.getElementById('jsonInput').value;
+            const output2 = document.getElementById('output2');
+            output.textContent = 'Загрузка...';
+            const token = sessionStorage.getItem('jwt');
+            fetch(`http://localhost:8080/api/v1/admin/adition/delivery_man?auth=${encodeURIComponent(token)}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: jsonInput
+            })
+            .then(response => {
+                if (response.status === 303) {
+                    window.location.href = "http://localhost:8080/api/v1/admin/login";
+                } else if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.status}`);
+                }
+                //return response.json();
+                //return response.json();
+            })
+            .then(data => {
+                output2.textContent = 'Успешное добавление'; //+ JSON.stringify(data);
+            })
+            .catch(error => {
+                output2.textContent = `Ошибка: ${error.message}`;
+            });
+        });
+
+        document.getElementById('giveButtonOrder').addEventListener('click', () => {
+            const idInput = document.getElementById('idInput').value;
+            const deliveryInput = document.getElementById('deliveryInput').value;
+            const output3 = document.getElementById('output3');
+            output.textContent = 'Загрузка...';
+
+            const token = sessionStorage.getItem('jwt');
+
+            fetch(`http://localhost:8080/api/v1/admin/create/delivery?order_id=${encodeURIComponent(idInput)}&&delivery_man_id=${encodeURIComponent(deliveryInput)}auth=${encodeURIComponent(token)}`, {
+                method: 'PUT',
+            })
+            .then(response => {
+                if (response.status === 303) {
+                    window.location.href = "http://localhost:8080/api/v1/admin/login";
+                } else if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.status}`);
+                }
+                //return response.json();
+            })
+            .then(data => {
+                output3.textContent = 'Успешная отправка'; //+ JSON.stringify(data);
+            })
+            .catch(error => {
+                output3.textContent = `Ошибка: ${error.message}`;
+            });
+        });
+
+      
+    </script>
+</body>
+</html>

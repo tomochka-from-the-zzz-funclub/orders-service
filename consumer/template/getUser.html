@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сервис заказов</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"] {
+            width: 300px;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            text-align: left;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Получить данные заказа</h1>
+        <input type="text" id="orderInputO" placeholder="Введите IDORDER">
+        <button id="getButtonOrder">Получить</button>
+        <div id="outputO" class="output"></div>
+
+        <h1>Узнать статус заказа</h1>
+        <input type="text" id="orderInputS" placeholder="Введите IDORDER">
+        <button id="getButtonStatus">Получить</button>
+        <div id="outputS" class="output"></div>
+    </div>
+
+    <script>
+        document.getElementById('getButtonOrder').addEventListener('click', () => {
+            const orderId = document.getElementById('orderInputO').value;
+            const output = document.getElementById('outputO');
+            output.textContent = 'Загрузка...';
+
+            const token = sessionStorage.getItem('jwt');
+
+            fetch(`http://localhost:8080/api/v1/user/get/order?order_uid=${encodeURIComponent(orderId)}&&auth=${encodeURIComponent(token)}`, {
+                method: 'GET',
+            })
+            .then(response => {
+                if (response.status === 303) {
+                    window.location.href = "http://localhost:8080/api/v1/auth/registration";
+                } else if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                output.textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                output.textContent = `Ошибка: ${error.message}`;
+            });
+        });
+
+        document.getElementById('getButtonStatus').addEventListener('click', () => {
+            const orderId = document.getElementById('orderInputS').value;
+            const output = document.getElementById('outputS');
+            output.textContent = 'Загрузка...';
+
+            const token = sessionStorage.getItem('jwt');
+
+            fetch(`http://localhost:8080/api/v1/user/get/status?order_uid=${encodeURIComponent(orderId)}&&auth=${encodeURIComponent(token)}`, {
+                method: 'GET',
+            })
+            .then(response => {
+                if (response.status === 303) {
+                    window.location.href = "http://localhost:8080/api/v1/auth/registration";
+                } else if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                output.textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                output.textContent = `Ошибка: ${error.message}`;
+            });
+        });
+    </script>
+</body>
+</html>

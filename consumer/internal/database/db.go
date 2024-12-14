@@ -48,8 +48,7 @@ CREATE TABLE IF NOT EXISTS item (
     name VARCHAR(255) NOT NULL,
     size VARCHAR(50),
     total_price INT NOT NULL,
-    brand VARCHAR(255),
-    status INT
+    brand VARCHAR(255)
 );
 
 CREATE TABLE IF NOT EXISTS delivery_man (
@@ -96,6 +95,27 @@ CREATE TABLE IF NOT EXISTS delivery (
     delivery_id VARCHAR(50),
     updated_at VARCHAR(40)
 );
+
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+	first_name  VARCHAR(50) NOT NULL,
+	last_name   VARCHAR(50) NOT NULL,
+	phone      VARCHAR(20) UNIQUE NOT NULL,
+	city       VARCHAR(50),
+    email VARCHAR(50)  UNIQUE NOT NULL,
+    updated_at VARCHAR(40)
+);
+
+CREATE TABLE IF NOT EXISTS admins (
+    id SERIAL PRIMARY KEY,
+	first_name  VARCHAR(50) NOT NULL,
+	last_name   VARCHAR(50) NOT NULL,
+	phone      VARCHAR(20) UNIQUE NOT NULL,
+	city       VARCHAR(50),
+    email VARCHAR(50)  UNIQUE NOT NULL
+);
+
+
 `
 	_, err = db.Exec(query)
 	if err != nil {
@@ -142,7 +162,7 @@ func (db *Postgres) AddOrderStruct(order models.Order) (int, error) {
 		}
 
 	}
-	order.Id = id
+	//order.Id = id
 	err = db.AddOrderStatus(id)
 	if err != nil {
 		myLog.Log.Errorf("Error Create Status Order: %v", err.Error())
@@ -242,15 +262,15 @@ func (db *Postgres) AddPayment(payment models.Payment) (int, error) {
 
 func (db *Postgres) AddItemsWithCategory(items []models.Item) ([]int, error) {
 	check_category := ` 
-        SELECT id 
+        SELECT id, category
 		FROM category_item 
 		WHERE category = $1
 		`
 
 	query_add_items := `
         WITH insert_return AS (
-            INSERT INTO item (track_number, category_id, price, name, size, total_price, brand, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            INSERT INTO item (track_number, category_id, price, name, size, total_price, brand)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING id
         )
         SELECT id FROM insert_return
@@ -261,15 +281,14 @@ func (db *Postgres) AddItemsWithCategory(items []models.Item) ([]int, error) {
 		VALUES ($1)
 		RETURNING id
 	)
-	SELECT id FROM insert_return
-`
+	SELECT id FROM insert_return`
 	var id_items []int
 	for i := 0; i < len(items); i++ {
 		var id_category int = 0
+		var cn string
+		err := db.Connection.QueryRow(check_category, items[i].Category.CategoryName).Scan(&id_category, &cn)
 
-		err := db.Connection.QueryRow(check_category, items[i].Category.CategoryName).Scan(&id_category)
-
-		if err == nil || id_category == 0 {
+		if err != nil && id_category != 0 {
 			myLog.Log.Debugf("This product category already exists, id: ", id_category)
 		} else {
 			err := db.Connection.QueryRow(query_add_cat, items[i].Category.CategoryName).Scan(&id_category)
@@ -282,7 +301,7 @@ func (db *Postgres) AddItemsWithCategory(items []models.Item) ([]int, error) {
 		var id int
 		err = db.Connection.QueryRow(query_add_items, items[i].TrackNumber, id_category, strconv.Itoa(items[i].Price),
 			items[i].Name, items[i].Size, strconv.Itoa(items[i].TotalPrice),
-			items[i].Brand, strconv.Itoa(items[i].Status)).Scan(&id)
+			items[i].Brand).Scan(&id)
 		if err != nil {
 			myLog.Log.Errorf("Error CreateItems: %v", err.Error())
 			return id_items, err
@@ -301,8 +320,7 @@ func (db *Postgres) AddOrder(order models.Order, items []int, payment int) (int,
 	VALUES ($1, $2::int[], $3, $4, $5)
 	RETURNING id
         )
-        SELECT id FROM insert_return
-`
+        SELECT id FROM insert_return`
 	var id int
 	err := db.Connection.QueryRow(query_add_order, payment, pq.Array(items), order.Locale,
 		order.DeliveryService, order.DateCreated).Scan(&id)
@@ -335,73 +353,154 @@ func (db *Postgres) UpdateStatus(order_id int, status string) error {
 	return err
 }
 
-// добавить категорию и что-то еще
+func (db *Postgres) Registration(user models.User) error {
+	query_reg := `
+	INSERT INTO users (first_name, last_name, phone, city, email, updated_at)
+	VALUES ($1, $2, $3, $4, $5, $6)
+	`
+	err := db.Connection.QueryRow(query_reg, user.FirstName, user.LastName, user.Phone, user.City, user.Email, time.Now().Format("2006-01-02 15:04:05")).Err()
+	if err != nil {
+		myLog.Log.Errorf("Error Registration: %v", err.Error())
+	}
+	//узнать какая ошибка, если человек уже зареган и и усключить ее
+	return err
+}
+
+func (db *Postgres) CheckRegistration(phone string) error {
+	var user string
+	query_check_reg := `
+	SELECT id
+	FROM users
+	WHERE phone = $1
+	`
+	err := db.Connection.QueryRow(query_check_reg, phone).Scan(&user)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// Пользователь не найден, это может быть нормальным поведением
+			return myErrors.ErrNotFoundUser // или можно вернуть специфическую ошибку
+		}
+		myLog.Log.Errorf("Error CheckRegistration: %v", err.Error())
+		return err
+	}
+	return nil
+}
+
 func (db *Postgres) GetOrder(order_id string) (models.Order, error) {
 	myLog.Log.Debugf("Go to db in GetOrder with id: %+v", order_id)
 	var order models.Order
 	var payment models.Payment
+	var id_items []string // Инициализация массива для идентификаторов элементов
+
 	query_get_order := `
-    SELECT o.items, o.locale, o.delivery_service, o.date_created,
+    SELECT o.items_id, o.locale, o.delivery_service, o.date_created, o.payment_id,
         p.transaction, p.request_id, p.currency, p.provider, p.amount, p.payment_dt, p.bank, p.delivery_cost, p.custom_fee
     FROM 
         orders o
     LEFT JOIN 
-        payment p ON o.payment = p.id
+        payment p ON o.payment_id = p.id
     WHERE 
-        o.order_uid = $1`
+        o.id = $1`
+
 	rows, err := db.Connection.Query(query_get_order, order_id)
 	if err != nil {
 		myLog.Log.Errorf("Error GetOrder: %v", err.Error())
 		return models.Order{}, err
 	}
 	defer rows.Close()
-	//itemMap := make(map[string]models.Item)
-	var id_items []string
+
 	if !rows.Next() { // Проверка на наличие записи
 		myLog.Log.Errorf("No order found with uuid: %v", order_id)
 		return models.Order{}, myErrors.ErrNotFoundOrder
 	}
-	for rows.Next() {
-		//var item models.Item
-		err = rows.Scan(
-			pq.Array(&id_items),
-			&order.Locale,
-			&order.DeliveryService,
-			&order.DateCreated,
-			&payment.Transaction,
-			&payment.RequestID,
-			&payment.Currency,
-			&payment.Provider,
-			&payment.Amount,
-			&payment.PaymentDT,
-			&payment.Bank,
-			&payment.DeliveryCost,
-			&payment.CustomFee,
-		)
-		if err != nil {
-			myLog.Log.Errorf("Error scanning row: %v", err.Error())
-			return models.Order{}, err
-		}
+	var p string
+	// Сканирование данных
+	err = rows.Scan(
+		pq.Array(&id_items), // Сканируем массив идентификаторов элементов
+		&order.Locale,
+		&order.DeliveryService,
+		&order.DateCreated,
+		&p, // Убедитесь, что payment_id соответствует полю в структуре Payment
+		&payment.Transaction,
+		&payment.RequestID,
+		&payment.Currency,
+		&payment.Provider,
+		&payment.Amount,
+		&payment.PaymentDT,
+		&payment.Bank,
+		&payment.DeliveryCost,
+		&payment.CustomFee,
+	)
+	if err != nil {
+		myLog.Log.Errorf("Error scanning row: %v", err.Error())
+		return models.Order{}, err
 	}
 
-	query_get_item :=
-		`SELECT id, track_number, price, rid, name, sale, size, total_price, nm_id, brand, status
-	WHERE id = $1`
-	var item models.Item
+	get_category := ` 
+	SELECT id, category
+	FROM category_item 
+	WHERE id = $1
+	`
+
+	// Инициализация массива items
 	var items []models.Item
-	for i := 0; i < len(order.Items); i++ {
-		err = db.Connection.QueryRow(query_get_item, order.Items[i]).Scan(&item.Id, &item.TrackNumber, &item.Price, &item.Name, &item.Size,
-			&item.TotalPrice, &item.Brand, &item.Status)
+	for _, itemID := range id_items {
+		var item models.Item
+		query_get_item := `
+		SELECT id, track_number, price, name, size, category_id, total_price, brand
+		FROM item WHERE id = $1`
+		var id_category string
+		err = db.Connection.QueryRow(query_get_item, itemID).Scan(&item.Id, &item.TrackNumber, &item.Price, &item.Name,
+			&item.Size, &id_category, &item.TotalPrice, &item.Brand)
 		if err != nil {
 			myLog.Log.Errorf("Error GetItems: %v", err.Error())
 			return models.Order{}, err
 		}
+		fmt.Println(id_category)
+		fmt.Println(item)
+		var category models.CategoryItem
+		err = db.Connection.QueryRow(get_category, id_category).Scan(&category.Id, &category.CategoryName)
+		if err != nil {
+			myLog.Log.Errorf("Error GetItemsCategory: %v", err.Error())
+			return models.Order{}, err
+		}
+		item.Category = category
 		items = append(items, item)
 	}
 	order.Items = items
-	//order.DeliveryMan = delivery
 	order.Payment = payment
 	return order, nil
+}
+
+func (db *Postgres) GetStatus(order_id string) (string, string, error) {
+	myLog.Log.Debugf("Go to db in GetStatus with id: %+v", order_id)
+	query_get_status := `
+    SELECT status, updated_at
+    FROM order_status
+    WHERE order_id = $1`
+	var status, time string
+	err := db.Connection.QueryRow(query_get_status, order_id).Scan(&status, &time)
+	if err != nil {
+		myLog.Log.Errorf("Error GetOrder: %v", err.Error())
+		return "", "", err
+	}
+	return status, time, err
+
+}
+
+func (db *Postgres) FindPhoneUser(phone string) error {
+	myLog.Log.Debugf("Go to db in FindPhoneUser with phone: %+v", phone)
+	query_get_status := `
+    SELECT id
+    FROM users
+    WHERE phone = $1`
+	var id int
+	err := db.Connection.QueryRow(query_get_status, phone).Scan(&id)
+	if err != nil {
+		myLog.Log.Errorf("Error GetOrder: %v", err.Error())
+		return err
+	}
+	return err
+
 }
 
 // func (db *Postgres) GetAllOrders() (map[int]models.Order, error) {
@@ -411,13 +510,11 @@ func (db *Postgres) GetOrder(order_id string) (models.Order, error) {
 //       	o.items, o.locale, o.delivery_service, o.date_created,
 //         d.name, d.phone, d.zip, d.city, d.address, d.region, d.email,
 //         p.transaction, p.request_id, p.currency, p.provider, p.amount, p.payment_dt, p.bank, p.delivery_cost, p.custom_fee
-
 // 	FROM  orders o
 //     LEFT JOIN
 //         delivery d ON o.delivery = d.id
 //     LEFT JOIN
 //         payment p ON o.payment = p.id`
-
 // 	rows, err := db.Connection.Query(query)
 // 	if err != nil {
 // 		return result, err
@@ -476,3 +573,33 @@ func (db *Postgres) GetOrder(order_id string) (models.Order, error) {
 // 	}
 // 	return result, nil
 // }
+
+func (db *Postgres) AddAdmin(admin models.Admin, items []int, payment int) (int, error) {
+	query_add_admin := `
+	WITH insert_return AS (
+	INSERT INTO admins (first_name, last_name, phone, email, city)
+	VALUES ($1, $2, $3, $4, $5)
+	RETURNING id
+        )
+        SELECT id FROM insert_return`
+	var id int
+	err := db.Connection.QueryRow(query_add_admin, admin.FirstName, admin.LastName, admin.Phone, admin.Email, admin.City).Scan(&id)
+	return id, err
+}
+
+func (db *Postgres) CheckAdmin(id int) error {
+	query_check_admin := `
+	SELECT id
+	FROM admins
+	WHERE id = $1
+	`
+	err := db.Connection.QueryRow(query_check_admin, strconv.Itoa(id)).Scan(&id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return myErrors.ErrNotFoundUser // или можно вернуть специфическую ошибку
+		}
+		myLog.Log.Errorf("Error CheckRegistration: %v", err.Error())
+		return err
+	}
+	return nil
+}
