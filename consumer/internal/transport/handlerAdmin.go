@@ -1,10 +1,7 @@
 package transport
 
 import (
-	"fmt"
-
 	myErrors "consumer/internal/errors"
-	my_errors "consumer/internal/errors"
 	myLog "consumer/internal/logger"
 
 	"net/http"
@@ -53,40 +50,63 @@ func (hb *HandlersBuilder) UpdateStatus() func(ctx *fasthttp.RequestCtx) {
 		if ctx.IsPut() {
 			auth := string(ctx.QueryArgs().Peek("auth"))
 			if auth == "" {
-				myLog.Log.Debugf("equql reqeust")
+				myLog.Log.Debugf("equql reqeust: auth")
+				WriteJsonErr(ctx, ErrorResponse{Message: "Not Login", Code: http.StatusSeeOther})
+				//ctx.SetStatusCode(fasthttp.StatusNotFound)
 			} else {
-
 				id, err := hb.srv.ValidateTokenAdmin(auth)
 				if err != nil {
 					myLog.Log.Errorf("Invalid token: ", err)
+					WriteJsonErr(ctx, ErrorResponse{Message: "Invalid token", Code: http.StatusSeeOther})
+					//ctx.SetStatusCode(fasthttp.StatusNotFound)
 				} else {
 					err := hb.srv.CheckAdmin(id)
 					if err != nil {
-						ctx.SetStatusCode(fasthttp.StatusSeeOther)
+						WriteJsonErr(ctx, ErrorResponse{Message: "Not Found Admin", Code: http.StatusSeeOther})
+						//ctx.SetStatusCode(fasthttp.StatusNotFound)
 						// на фронте этот стутус код на редирект на регистрацию
 					} else {
 						orderID := string(ctx.QueryArgs().Peek("order_id"))
 						if orderID == "" {
 							myLog.Log.Debugf("equql reqeust: order id")
+							WriteJsonErr(ctx, ErrorResponse{Message: "Equql reqeust: order id", Code: http.StatusBadRequest})
+
+							//ctx.SetStatusCode(http.StatusBadRequest)
 						} else {
 							order_id, err := strconv.Atoi(orderID)
 							if err != nil {
 								myLog.Log.Errorf("Invalid order id: %+v", err.Error())
+
+								WriteJsonErr(ctx, ErrorResponse{Message: "Invalid order id", Code: http.StatusBadRequest})
+
+								//ctx.SetStatusCode(http.StatusBadRequest)
 							} else {
 								status := string(ctx.QueryArgs().Peek("status"))
 								if status == "" {
-									myLog.Log.Debugf("equql reqeust: new status")
+									myLog.Log.Debugf("Equql reqeust: new status")
+
+									WriteJsonErr(ctx, ErrorResponse{Message: "Equql reqeust: new status", Code: http.StatusBadRequest})
+
+									//ctx.SetStatusCode(http.StatusBadRequest)
 								} else {
 									if (status != "create") && (status != "assembly") && (status != "delivery") {
-										myLog.Log.Errorf("invalid status")
+										myLog.Log.Errorf("Invalid status")
+										WriteJsonErr(ctx, ErrorResponse{Message: "Invalid status", Code: http.StatusBadRequest})
+
+										//ctx.SetStatusCode(http.StatusBadRequest)
 									} else {
 										myLog.Log.Debugf("func Get with id %+v", orderID)
 										err = hb.srv.UpdateStatusSrv(order_id, status)
 										if err != nil {
 											if err == myErrors.ErrNotFoundOrder {
-												ctx.SetStatusCode(fasthttp.StatusNotFound)
+												myLog.Log.Errorf("Not Found Order")
+												WriteJsonErr(ctx, ErrorResponse{Message: "Not Found Order", Code: http.StatusBadRequest})
+
+												//ctx.SetStatusCode(fasthttp.StatusBadRequest)
 											} else {
-												ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+												WriteJsonErr(ctx, ErrorResponse{Message: "Internal Server Error", Code: http.StatusInternalServerError})
+
+												//ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 											}
 										} else {
 											myLog.Log.Debugf("sucsess update status: %+v", order_id)
@@ -101,8 +121,10 @@ func (hb *HandlersBuilder) UpdateStatus() func(ctx *fasthttp.RequestCtx) {
 				}
 			}
 		} else {
-			WriteJson(ctx, my_errors.ErrMethodNotAllowed.Error())
-			ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
+			WriteJsonErr(ctx, ErrorResponse{Message: "Not Allowed", Code: http.StatusMethodNotAllowed})
+
+			//WriteJson(ctx, my_errors.ErrMethodNotAllowed.Error())
+			//ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
 			myLog.Log.Debugf("MethodNotAllowed")
 		}
 	}, "UpdateStatus")
@@ -114,45 +136,68 @@ func (hb *HandlersBuilder) GiveOrderToDeliveryMan() func(ctx *fasthttp.RequestCt
 		if ctx.IsPut() {
 			auth := string(ctx.QueryArgs().Peek("auth"))
 			if auth == "" {
-				myLog.Log.Debugf("equql reqeust")
+				myLog.Log.Debugf("not login")
+				WriteJsonErr(ctx, ErrorResponse{Message: "Not Login", Code: http.StatusSeeOther})
+				//ctx.SetStatusCode(fasthttp.StatusNotFound)
 			} else {
 
 				id, err := hb.srv.ValidateTokenAdmin(auth)
 				if err != nil {
 					myLog.Log.Errorf("Invalid token: ", err)
+					WriteJsonErr(ctx, ErrorResponse{Message: "Invalid token", Code: http.StatusSeeOther})
+
+					//ctx.SetStatusCode(fasthttp.StatusNotFound)
 				} else {
 					err := hb.srv.CheckAdmin(id)
 					if err != nil {
-						ctx.SetStatusCode(fasthttp.StatusSeeOther)
+
+						WriteJsonErr(ctx, ErrorResponse{Message: "Not Find admin", Code: http.StatusSeeOther})
+
+						//ctx.SetStatusCode(fasthttp.StatusNotFound)
 						// на фронте этот стутус код на редирект на регистрацию
 					} else {
 						orderID := string(ctx.QueryArgs().Peek("order_id"))
 						if orderID == "" {
 							myLog.Log.Debugf("equql reqeust: order id")
+							WriteJsonErr(ctx, ErrorResponse{Message: "Equql reqeust: order id", Code: http.StatusBadRequest})
+							//ctx.SetStatusCode(fasthttp.StatusBadRequest)
 						} else {
 							order_id, err := strconv.Atoi(orderID)
 							if err != nil {
 								myLog.Log.Errorf("Invalid order id: %+v", err.Error())
+								WriteJsonErr(ctx, ErrorResponse{Message: "Invalid order id", Code: http.StatusBadRequest})
+								//ctx.SetStatusCode(fasthttp.StatusBadRequest)
 							} else {
 								delivery_man_id_ := string(ctx.QueryArgs().Peek("delivery_man_id"))
 								if delivery_man_id_ == "" {
-									myLog.Log.Debugf("equql reqeust: new status")
+									myLog.Log.Debugf("equql reqeust: delivery man id")
+
+									WriteJsonErr(ctx, ErrorResponse{Message: "Equql reqeust: delivery man id", Code: http.StatusBadRequest})
+									//ctx.SetStatusCode(fasthttp.StatusBadRequest)
 								} else {
 									delivery_man_id, err := strconv.Atoi(delivery_man_id_)
 									if err != nil {
-										myLog.Log.Errorf("Invalid order id: %+v", err.Error())
+										myLog.Log.Errorf("Invalid delivery man id: %+v", err.Error())
+
+										WriteJsonErr(ctx, ErrorResponse{Message: "Invalid delivery man id", Code: http.StatusBadRequest})
+										//ctx.SetStatusCode(fasthttp.StatusBadRequest)
 									} else {
 										myLog.Log.Debugf("func GiveOrderToDeliveryMan with id %+v", orderID)
 
 										err = hb.srv.GiveOrderDelivery(order_id, delivery_man_id) //
 										if err != nil {
 											if err == myErrors.ErrNotFoundOrder {
-												ctx.SetStatusCode(fasthttp.StatusNotFound)
+
+												WriteJsonErr(ctx, ErrorResponse{Message: "Not found delivery man id or  order id", Code: http.StatusBadRequest})
+												//ctx.SetStatusCode(fasthttp.StatusBadRequest)
 											} else {
-												ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+
+												WriteJsonErr(ctx, ErrorResponse{Message: "Internal service error", Code: http.StatusInternalServerError})
+
+												//ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 											}
 										} else {
-											myLog.Log.Debugf("sucsess update status: %+v", order_id)
+											myLog.Log.Debugf("sucsess GiveOrderToDeliveryMan: %+v, %v", order_id, delivery_man_id)
 
 										}
 									}
@@ -165,8 +210,9 @@ func (hb *HandlersBuilder) GiveOrderToDeliveryMan() func(ctx *fasthttp.RequestCt
 
 			}
 		} else {
-			WriteJson(ctx, my_errors.ErrMethodNotAllowed.Error())
-			ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
+			//WriteJson(ctx, my_errors.ErrMethodNotAllowed.Error())
+			WriteJsonErr(ctx, ErrorResponse{Message: "Method Not Allowed", Code: http.StatusMethodNotAllowed})
+			//ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
 			myLog.Log.Debugf("MethodNotAllowed")
 		}
 	}, "GiveOrderToDeliveryMan")
@@ -176,22 +222,49 @@ func (hb *HandlersBuilder) CreateDeliveryMan() func(ctx *fasthttp.RequestCtx) {
 	return metrics(func(ctx *fasthttp.RequestCtx) {
 		myLog.Log.Debugf("Start func CreateDeliveryMan: %+v", string(ctx.Request.Body()))
 		if ctx.IsPost() {
-			fmt.Println(string(ctx.Request.Header.Method()))
-			delivery_man, err := ParseJsonDEliveryMan(ctx)
-			if err != nil {
-				myLog.Log.Errorf("err: %v", err.Error())
-				WriteJson(ctx, "Error parse")
+			auth := string(ctx.QueryArgs().Peek("auth"))
+			if auth == "" {
+				myLog.Log.Debugf("equql reqeust: token")
+				WriteJsonErr(ctx, ErrorResponse{Message: "Not Login", Code: http.StatusSeeOther})
+				//ctx.SetStatusCode(fasthttp.StatusNotFound)
 			} else {
-				id, err := hb.srv.CreateDeliveryMan(delivery_man)
+				id, err := hb.srv.ValidateTokenAdmin(auth)
 				if err != nil {
-					myLog.Log.Errorf("AddDeliveryMan", err.Error())
+					myLog.Log.Errorf("Invalid token: ", err)
+					WriteJsonErr(ctx, ErrorResponse{Message: "Invalid token", Code: http.StatusSeeOther})
+					//ctx.SetStatusCode(fasthttp.StatusNotFound)
 				} else {
-					myLog.Log.Debugf("Sucses AddDeliveryMan with id: %+v", id)
+					err := hb.srv.CheckAdmin(id)
+					if err != nil {
+						WriteJsonErr(ctx, ErrorResponse{Message: "Not found admin", Code: http.StatusSeeOther})
+						//ctx.SetStatusCode(fasthttp.StatusNotFound)
+						// на фронте этот стутус код на редирект на регистрацию
+					} else {
+						delivery_man, err := ParseJsonDEliveryMan(ctx)
+						if err != nil {
+							myLog.Log.Errorf("err: %v", err.Error())
+							//ctx.SetStatusCode(http.StatusBadRequest)
+							WriteJsonErr(ctx, ErrorResponse{Message: "Erorr parse info delivery man", Code: http.StatusBadRequest})
+
+							//ctx.SetStatusCode(http.StatusBadRequest)
+						} else {
+							id, err := hb.srv.CreateDeliveryMan(delivery_man)
+							if err != nil {
+								myLog.Log.Errorf("AddDeliveryMan", err.Error())
+								WriteJsonErr(ctx, ErrorResponse{Message: "Internal server error", Code: http.StatusInternalServerError})
+
+								//ctx.SetStatusCode(http.StatusBadRequest)
+							} else {
+								myLog.Log.Debugf("Sucses AddDeliveryMan with id: %+v", id)
+							}
+						}
+					}
 				}
 			}
 
 		} else {
-			ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
+			WriteJsonErr(ctx, ErrorResponse{Message: "Method Not Allowed", Code: http.StatusMethodNotAllowed})
+			//ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
 			myLog.Log.Warnf("message from func CreateDeliveryMan %v", myErrors.ErrMethodNotAllowed.Error())
 		}
 	}, "CreateDeliveryMan")
@@ -234,30 +307,37 @@ func (hb *HandlersBuilder) LoginAdmin() func(ctx *fasthttp.RequestCtx) {
 		if ctx.IsPut() {
 			id_ := string(ctx.QueryArgs().Peek("id"))
 			if id_ == "" {
-				myLog.Log.Debugf("equql reqeust")
-				WriteJson(ctx, "equql reqeust")
-				ctx.SetStatusCode(http.StatusBadRequest)
+				myLog.Log.Debugf("equql reqeust: id")
+				WriteJsonErr(ctx, ErrorResponse{Message: "Equql reqeust: id", Code: http.StatusBadRequest})
+				//WriteJson(ctx, "equql reqeust")
+				//ctx.SetStatusCode(http.StatusBadRequest)
 			} else {
 				id, err := strconv.Atoi(id_)
 				if err != nil {
 					myLog.Log.Debugf("bad reqeust")
-					WriteJson(ctx, "bad reqeust")
-					ctx.SetStatusCode(http.StatusBadRequest)
+					WriteJsonErr(ctx, ErrorResponse{Message: "Bad reqeust: id", Code: http.StatusBadRequest})
+
+					// WriteJson(ctx, "bad reqeust")
+					// ctx.SetStatusCode(http.StatusBadRequest)
 				} else {
 					err := hb.srv.CheckAdmin(id)
 					if err != nil {
 						if err == myErrors.ErrNotFoundUser {
 							myLog.Log.Errorf("Error Login", err.Error())
-							ctx.SetStatusCode(fasthttp.StatusNotFound)
+							WriteJsonErr(ctx, ErrorResponse{Message: "Error login: not found user", Code: http.StatusNotFound})
+							//ctx.SetStatusCode(fasthttp.StatusNotFound)
 						} else {
-							WriteJson(ctx, "Error login")
-							ctx.SetStatusCode(fasthttp.StatusInternalServerError)
+							WriteJsonErr(ctx, ErrorResponse{Message: "Error login: internal server error", Code: http.StatusInternalServerError})
+							// WriteJson(ctx, "Error login")
+							// ctx.SetStatusCode(fasthttp.StatusInternalServerError)
 						}
 					} else {
 						myLog.Log.Debugf("Sucses Login")
 						token, err := hb.srv.GenerateAdminToken(id)
 						if err != nil {
 							myLog.Log.Debugf("Error generate token: %+v", err)
+							WriteJsonErr(ctx, ErrorResponse{Message: "Error login: generate token", Code: http.StatusInternalServerError})
+							//ctx.SetStatusCode(http.StatusInternalServerError)
 						} else {
 							myLog.Log.Debugf("Token: %+v", token)
 						}
@@ -268,7 +348,8 @@ func (hb *HandlersBuilder) LoginAdmin() func(ctx *fasthttp.RequestCtx) {
 			}
 
 		} else {
-			ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
+			//ctx.SetStatusCode(fasthttp.StatusMethodNotAllowed)
+			WriteJsonErr(ctx, ErrorResponse{Message: "MethodNotAllowed", Code: http.StatusMethodNotAllowed})
 			myLog.Log.Warnf("message from func Login %v", myErrors.ErrMethodNotAllowed.Error())
 		}
 	}, "Login")

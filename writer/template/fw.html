@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!-- <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
@@ -148,6 +148,373 @@
     });
 });
 
+    </script>
+</body>
+</html> -->
+<!-- 
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление заказами</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        input, textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: none;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px 0;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            text-align: left;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Управление заказами</h1>
+
+        <h2>Добавить заказ</h2>
+        <h3>Платежная информация</h3>
+        <input type="text" id="transactionInput" placeholder="Введите номер транзакции">
+        <input type="text" id="requestIdInput" placeholder="Введите ID запроса">
+        <input type="text" id="currencyInput" placeholder="Введите валюту">
+        <input type="text" id="providerInput" placeholder="Введите провайдера">
+        <input type="number" id="amountInput" placeholder="Введите сумму">
+        <input type="number" id="paymentDtInput" placeholder="Введите дату платежа (timestamp)">
+        <input type="text" id="bankInput" placeholder="Введите банк">
+        <input type="number" id="deliveryCostInput" placeholder="Введите стоимость доставки">
+        <input type="number" id="customFeeInput" placeholder="Введите пользовательский сбор">
+
+        <h3>Товары</h3>
+        <h4>Товар 1</h4>
+        <input type="number" id="item1Id" placeholder="Введите ID товара">
+        <input type="text" id="item1TrackNumber" placeholder="Введите номер отслеживания">
+        <input type="text" id="item1Category" placeholder="Введите категорию товара">
+        <input type="number" id="item1Price" placeholder="Введите цену товара">
+        <input type="text" id="item1Name" placeholder="Введите название товара">
+        <input type="text" id="item1Size" placeholder="Введите размер товара">
+        <input type="number" id="item1TotalPrice" placeholder="Введите общую цену товара">
+        <input type="text" id="item1Brand" placeholder="Введите бренд товара">
+        <input type="number" id="item1Status" placeholder="Введите статус товара">
+
+        <h4>Товар 2</h4>
+        <input type="number" id="item2Id" placeholder="Введите ID товара">
+        <input type="text" id="item2TrackNumber" placeholder="Введите номер отслеживания">
+        <input type="text" id="item2Category" placeholder="Введите категорию товара">
+        <input type="number" id="item2Price" placeholder="Введите цену товара">
+        <input type="text" id="item2Name" placeholder="Введите название товара">
+        <input type="text" id="item2Size" placeholder="Введите размер товара">
+        <input type="number" id="item2TotalPrice" placeholder="Введите общую цену товара">
+        <input type="text" id="item2Brand" placeholder="Введите бренд товара">
+        <input type="number" id="item2Status" placeholder="Введите статус товара">
+
+        <h3>Дополнительные параметры</h3>
+        <input type="text" id="localeInput" placeholder="Введите локаль">
+        <input type="text" id="deliveryServiceInput" placeholder="Введите службу доставки">
+        <input type="datetime-local" id="dateCreatedInput" placeholder="Введите дату создания">
+
+        <button id="addButton">Добавить</button>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <script>
+        document.getElementById('addButton').addEventListener('click', () => {
+            const output = document.getElementById('output');
+            output.textContent = 'Загрузка...';
+
+            const orderData = {
+                payment: {
+                    transaction: document.getElementById('transactionInput').value,
+                    request_id: document.getElementById('requestIdInput').value,
+                    currency: document.getElementById('currencyInput').value,
+                    provider: document.getElementById('providerInput').value,
+                    amount: parseFloat(document.getElementById('amountInput').value),
+                    payment_dt: parseInt(document.getElementById('paymentDtInput').value),
+                    bank: document.getElementById('bankInput').value,
+                    delivery_cost: parseFloat(document.getElementById('deliveryCostInput').value),
+                    custom_fee: parseFloat(document.getElementById('customFeeInput').value)
+                },
+                items: [
+                    {
+                        id: parseInt(document.getElementById('item1Id').value),
+                        track_number: document.getElementById('item1TrackNumber').value,
+                        category: {
+                            category_name: document.getElementById('item1Category').value
+                        },
+                        price: parseFloat(document.getElementById('item1Price').value),
+                        name: document.getElementById('item1Name').value,
+                        size: document.getElementById('item1Size').value,
+                        total_price: parseFloat(document.getElementById('item1TotalPrice').value),
+                        brand: document.getElementById('item1Brand').value,
+                        status: parseInt(document.getElementById('item1Status').value)
+                    },
+                    {
+                        id: parseInt(document.getElementById('item2Id').value),
+                        track_number: document.getElementById('item2TrackNumber').value,
+                        category: {
+                            category_name: document.getElementById('item2Category').value
+                        },
+                        price: parseFloat(document.getElementById('item2Price').value),
+                        name: document.getElementById('item2Name').value,
+                        size: document.getElementById('item2Size').value,
+                        total_price: parseFloat(document.getElementById('item2TotalPrice').value),
+                        brand: document.getElementById('item2Brand').value,
+                        status: parseInt(document.getElementById('item2Status').value)
+                    }
+                ],
+                locale: document.getElementById('localeInput').value,
+                delivery_service: document.getElementById('deliveryServiceInput').value,
+                date_created: document.getElementById('dateCreatedInput').value
+            };
+
+            fetch('http://localhost:8081/api/v1/set', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                output.textContent = 'Успешное добавление: ' + JSON.stringify(data);
+            })
+            .catch(error => {
+                output.textContent = `Ошибка: ${error.message}`;
+            });
+        });
+    </script>
+</body>
+</html> --> 
+
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление заказами</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            text-align: center;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+        }
+        input, textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            resize: none;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin: 10px 0;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+            text-align: left;
+            font-family: monospace;
+        }
+        .item-fields {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Управление заказами</h1>
+
+        <h2>Добавить заказ</h2>
+        <h3>Платежная информация</h3>
+        <input type="text" id="transactionInput" placeholder="Введите номер транзакции">
+        <input type="text" id="requestIdInput" placeholder="Введите ID запроса">
+        <input type="text" id="currencyInput" placeholder="Введите валюту">
+        <input type="text" id="providerInput" placeholder="Введите провайдера">
+        <input type="number" id="amountInput" placeholder="Введите сумму">
+        <input type="number" id="paymentDtInput" placeholder="Введите дату платежа (timestamp)">
+        <input type="text" id="bankInput" placeholder="Введите банк">
+        <input type="number" id="deliveryCostInput" placeholder="Введите стоимость доставки">
+        <input type="number" id="customFeeInput" placeholder="Введите пользовательский сбор">
+
+        <h3>Количество товаров</h3>
+        <input type="number" id="productCountInput" placeholder="Введите количество товаров" min="1">
+        <button id="generateProductFieldsButton">Сгенерировать поля для товаров</button>
+
+        <div id="productFields" class="item-fields"></div>
+
+        <h3>Дополнительные параметры</h3>
+        <input type="text" id="localeInput" placeholder="Введите локаль">
+        <input type="text" id="deliveryServiceInput" placeholder="Введите службу доставки">
+        <input type="datetime-local" id="dateCreatedInput" placeholder="Введите дату создания">
+
+        <button id="addButton">Добавить</button>
+
+        <div id="output" class="output"></div>
+    </div>
+
+    <script>
+        document.getElementById('generateProductFieldsButton').addEventListener('click', () => {
+            const productCount = parseInt(document.getElementById('productCountInput').value);
+            const productFieldsContainer = document.getElementById('productFields');
+            productFieldsContainer.innerHTML = ''; // Очистить предыдущие поля
+
+            for (let i = 1; i <= productCount; i++) {
+                const itemDiv = document.createElement('div');
+                itemDiv.innerHTML = `
+                    <h4>Товар ${i}</h4>
+                    <input type="text" id="item${i}TrackNumber" placeholder="Введите номер отслеживания">
+                    <input type="text" id="item${i}Category" placeholder="Введите категорию товара">
+                    <input type="number" id="item${i}Price" placeholder="Введите цену товара">
+                    <input type="text" id="item${i}Name" placeholder="Введите название товара">
+                    <input type="text" id="item${i}Size" placeholder="Введите размер товара">
+                    <input type="number" id="item${i}TotalPrice" placeholder="Введите общую цену товара">
+                    <input type="text" id="item${i}Brand" placeholder="Введите бренд товара">
+                `;
+                productFieldsContainer.appendChild(itemDiv);
+            }
+        });
+
+        document.getElementById('addButton').addEventListener('click', () => {
+            const output = document.getElementById('output');
+            output.textContent = 'Загрузка...';
+
+            const orderData = {
+                payment: {
+                    transaction: document.getElementById('transactionInput').value,
+                    request_id: document.getElementById('requestIdInput').value,
+                    currency: document.getElementById('currencyInput').value,
+                    provider: document.getElementById('providerInput').value,
+                    amount: parseFloat(document.getElementById('amountInput').value),
+                    payment_dt: parseInt(document.getElementById('paymentDtInput').value),
+                    bank: document.getElementById('bankInput').value,
+                    delivery_cost: parseFloat(document.getElementById('deliveryCostInput').value),
+                    custom_fee: parseFloat(document.getElementById('customFeeInput').value)
+                },
+                items: []
+            };
+
+            const productCount = parseInt(document.getElementById('productCountInput').value);
+            for (let i = 1; i <= productCount; i++) {
+                const item = {
+                    track_number: document.getElementById(`item${i}TrackNumber`).value,
+                    category: {
+                        category_name: document.getElementById(`item${i}Category`).value
+                    },
+                    price: parseFloat(document.getElementById(`item${i}Price`).value),
+                    name: document.getElementById(`item${i}Name`).value,
+                    size: document.getElementById(`item${i}Size`).value,
+                    total_price: parseFloat(document.getElementById(`item${i}TotalPrice`).value),
+                    brand: document.getElementById(`item${i}Brand`).value
+                };
+                orderData.items.push(item);
+            }
+
+            // Добавляем дополнительные параметры
+            orderData.locale = document.getElementById('localeInput').value;
+            orderData.delivery_service = document.getElementById('deliveryServiceInput').value;
+            orderData.date_created = document.getElementById('dateCreatedInput').value;
+
+            fetch('http://localhost:8081/api/v1/set', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Ошибка: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                output.textContent = 'Успешное добавление: ' + JSON.stringify(data);
+            })
+            .catch(error => {
+                output.textContent = `Ошибка: ${error.message}`;
+            });
+        });
     </script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -7,54 +8,68 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
             margin: 0;
             background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Изменено на flex-start для выравнивания по верхней части */
+            height: 100vh; /* Высота вьюпорта */
+            overflow-y: auto; /* Добавляем прокрутку для всего тела страницы */
         }
+
         .container {
+            width: 100%;
+            max-width: 800px; /* Ограничение ширины контейнера */
+            min-height: 1000px; /* Минимальная высота контейнера */
             text-align: center;
             background: #fff;
-            padding: 20px;
+            padding: 30px; /* Увеличиваем отступы */
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-top: 20px; /* Отступ сверху для контейнера */
         }
-        input[type="text"] {
-            width: 300px;
-            padding: 10px;
+
+        .section {
+            margin-bottom: 30px; /* Увеличиваем отступ между секциями */
+        }
+
+        input[type="text"], input[type="number"], input[type="email"], textarea {
+            width: 100%; /* Ширина 100% для ввода */
+            padding: 12px; /* Увеличиваем внутренний отступ */
             margin: 10px 0;
             font-size: 16px;
             border: 1px solid #ccc;
             border-radius: 5px;
         }
-        /* Убираем стрелочки в полях ввода типа number */
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
+        /* Убираем стрелочки для полей ввода типа number */
         input[type="number"] {
             -moz-appearance: textfield; /* Для Firefox */
         }
 
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none; /* Для Chrome, Safari и Opera */
+            margin: 0; /* Убираем отступ */
+        }
+
+
         button {
             background-color: #4CAF50;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 20px; /* Увеличиваем внутренний отступ кнопки */
             border: none;
             border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
             transition: background-color 0.3s;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
         .output {
-            margin-top: 20px;
+            margin-top: 10px;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 5px;
@@ -67,27 +82,48 @@
 </head>
 <body>
     <div class="container">
-        <h1>Изменить статус заказа</h1>
+        <div class="section">
+            <h1>Изменить статус заказа</h1>
+            <input type="number" id="idInput" placeholder="Введите ID заказа" required>
+            <input type="text" id="statusInput" placeholder="Введите новый статус" required>
+            <button id="updateButtonOrder">Изменить</button>
+            <div id="output1" class="output"></div>
+        </div>
 
-        <input type="number" id="idInput" placeholder="Введите ID заказа" required>
-        <input type="text" id="statusInput" placeholder="Введите новый статус" required>
-        <button id="updateButtonOrder">Изменить</button>
-        <div id="output1" class="output"></div>
+        <div class="section">
+            <h1>Передать в доставку заказ</h1>
+            <input type="number" id="idInputDelivery" placeholder="Введите ID заказа" required>
+            <input type="number" id="deliveryInput" placeholder="Введите ID работника доставки" required>
+            <button id="giveButtonOrder">Отправить</button>
+            <div id="output3" class="output"></div>
+        </div>
 
-        <h1>Добавить работника доставки</h1>
+        <div class="section">
+            <h1>Добавить работника доставки</h1>
+            <label for="nameInput">Имя:</label>
+            <input type="text" id="nameInput" placeholder="Введите имя" required>
 
-        <textarea id="jsonInput" rows="5" placeholder="Введите JSON"></textarea>
-        <button id="addDeliveryButton">Добавить</button>
-        <div id="output2" class="output"></div>
+            <label for="phoneInput">Телефон:</label>
+            <input type="text" id="phoneInput" placeholder="Введите телефон" required>
 
-        <h1>Передать в доставку заказ</h1>
+            <label for="zipInput">Почтовый индекс:</label>
+            <input type="text" id="zipInput" placeholder="Введите почтовый индекс" required>
 
-        <input type="number" id="idInput" placeholder="Введите ID заказа" required>
-        <input type="number" id="deliveryInput" placeholder="Введите ID работника доставки" required>
-        <button id="giveButtonOrder">Отправить</button>
-        <div id="output3" class="output"></div>
+            <label for="cityInput">Город:</label>
+            <input type="text" id="cityInput" placeholder="Введите город" required>
 
+            <label for="addressInput">Адрес:</label>
+            <input type="text" id="addressInput" placeholder="Введите адрес" required>
 
+            <label for="regionInput">Регион:</label>
+            <input type="text" id="regionInput" placeholder="Введите регион" required>
+
+            <label for="emailInput">Электронная почта:</label>
+            <input type="email" id="emailInput" placeholder="Введите электронную почту" required>
+
+            <button id="addDeliveryButton">Добавить</button>
+            <div id="output2" class="output"></div>
+        </div>
     </div>
 
     <script>
@@ -97,50 +133,64 @@
             const output = document.getElementById('output1');
             output.textContent = 'Загрузка...';
             const token = sessionStorage.getItem('jwt');
-            fetch(`http://localhost:8080/api/v1/admin/update/status?order_id=${encodeURIComponent(orderId)}&&auth=${encodeURIComponent(token)}&&status=${encodeURIComponent(status)}`, {
+            
+            fetch(`http://localhost:8080/api/v1/admin/update/status?order_id=${encodeURIComponent(orderId)}&auth=${encodeURIComponent(token)}&status=${encodeURIComponent(status)}`, {
                 method: 'PUT',
             })
             .then(response => {
                 if (response.status === 303) {
                     window.location.href = "http://localhost:8080/api/v1/admin/auth/login";
                 } else if (!response.ok) {
-                    throw new Error(`Ошибка: ${response.status}`);
-                }
-                //return response.json();
-            })
-            .then(data => {
-                //output1.textContent = JSON.stringify(data, null, 2);
-                output2.textContent = 'Статус обновлен';
-
+                    return response.json().then(errorData => {
+                        throw new Error(`Ошибка: ${errorData.message} (код: ${errorData.code})`);
+                    });
+                } 
+                output.textContent = 'Статус обновлен';
             })
             .catch(error => {
-                output1.textContent = `Ошибка: ${error.message}`;
+                output.textContent = `Ошибка: ${error.message}`;
             });
         });
 
         document.getElementById('addDeliveryButton').addEventListener('click', () => {
-            const jsonInput = document.getElementById('jsonInput').value;
+            const deliveryMan = {
+                name: document.getElementById('nameInput').value,
+                phone: document.getElementById('phoneInput').value,
+                zip: document.getElementById('zipInput').value,
+                city: document.getElementById('cityInput').value,
+                address: document.getElementById('addressInput').value,
+                region: document.getElementById('regionInput').value,
+                email: document.getElementById('emailInput').value,
+            };
+
             const output2 = document.getElementById('output2');
-            output.textContent = 'Загрузка...';
+            output2.textContent = 'Загрузка...';
             const token = sessionStorage.getItem('jwt');
+
+            // Проверка на заполненность всех полей
+            for (const key in deliveryMan) {
+                if (!deliveryMan[key]) {
+                    output2.textContent = `Ошибка: Поле "${key}" не может быть пустым.`;
+                    return;
+                }
+            }
+
             fetch(`http://localhost:8080/api/v1/admin/adition/delivery_man?auth=${encodeURIComponent(token)}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: jsonInput
+                body: JSON.stringify(deliveryMan) // Преобразование объекта в JSON
             })
             .then(response => {
                 if (response.status === 303) {
-                    window.location.href = "http://localhost:8080/api/v1/admin/login";
+                    window.location.href = "http://localhost:8080/api/v1/admin/auth/login";
                 } else if (!response.ok) {
-                    throw new Error(`Ошибка: ${response.status}`);
+                    return response.json().then(errorData => {
+                        throw new Error(`Ошибка: ${errorData.message} (код: ${errorData.code})`);
+                    });
                 }
-                //return response.json();
-                //return response.json();
-            })
-            .then(data => {
-                output2.textContent = 'Успешное добавление'; //+ JSON.stringify(data);
+                output2.textContent = 'Успешное добавление';
             })
             .catch(error => {
                 output2.textContent = `Ошибка: ${error.message}`;
@@ -148,33 +198,30 @@
         });
 
         document.getElementById('giveButtonOrder').addEventListener('click', () => {
-            const idInput = document.getElementById('idInput').value;
+            const idInput = document.getElementById('idInputDelivery').value;
             const deliveryInput = document.getElementById('deliveryInput').value;
             const output3 = document.getElementById('output3');
-            output.textContent = 'Загрузка...';
+            output3.textContent = 'Загрузка...';
 
             const token = sessionStorage.getItem('jwt');
 
-            fetch(`http://localhost:8080/api/v1/admin/create/delivery?order_id=${encodeURIComponent(idInput)}&&delivery_man_id=${encodeURIComponent(deliveryInput)}auth=${encodeURIComponent(token)}`, {
+            fetch(`http://localhost:8080/api/v1/admin/create/delivery?order_id=${encodeURIComponent(idInput)}&delivery_man_id=${encodeURIComponent(deliveryInput)}&auth=${encodeURIComponent(token)}`, {
                 method: 'PUT',
             })
             .then(response => {
                 if (response.status === 303) {
-                    window.location.href = "http://localhost:8080/api/v1/admin/login";
+                    window.location.href = "http://localhost:8080/api/v1/admin/auth/login";
                 } else if (!response.ok) {
-                    throw new Error(`Ошибка: ${response.status}`);
+                    return response.json().then(errorData => {
+                        throw new Error(`Ошибка: ${errorData.message} (код: ${errorData.code})`);
+                    });
                 }
-                //return response.json();
-            })
-            .then(data => {
-                output3.textContent = 'Успешная отправка'; //+ JSON.stringify(data);
+                output3.textContent = 'Успешная отправка';
             })
             .catch(error => {
                 output3.textContent = `Ошибка: ${error.message}`;
             });
         });
-
-      
     </script>
 </body>
 </html>

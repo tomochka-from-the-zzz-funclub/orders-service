@@ -65,11 +65,29 @@ func ParseJsonLogin(ctx *fasthttp.RequestCtx) (string, error) {
 	return user.Phone, nil // Возвращаем номер телефона
 }
 
-func WriteJson(ctx *fasthttp.RequestCtx, s string) error {
+// func WriteJson(ctx *fasthttp.RequestCtx, s string) error {
+// 	ctx.SetContentType("application/json")
+// 	ctx.Response.BodyWriter()
+// 	err := json.NewEncoder((*ctx).Response.BodyWriter()).Encode(s)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
+
+type ErrorResponse struct {
+	Message string `json:"message"`
+	Code    int    `json:"code"`
+}
+
+func WriteJsonErr(ctx *fasthttp.RequestCtx, data ErrorResponse) error {
 	ctx.SetContentType("application/json")
-	ctx.Response.BodyWriter()
-	err := json.NewEncoder((*ctx).Response.BodyWriter()).Encode(s)
+	ctx.Response.SetStatusCode(data.Code) // Установка статус кода
+
+	// Кодируем данные в JSON
+	err := json.NewEncoder(ctx).Encode(data)
 	if err != nil {
+		myLog.Log.Errorf("Error write error")
 		return err
 	}
 	return nil
